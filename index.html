@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Note Transcriber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .pulse {
+            animation: pulse-animation 1.5s infinite;
+        }
+        @keyframes pulse-animation {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Medical Note Transcriber</h1>
+            <p class="text-md text-gray-600 mt-2">Use your voice to dictate patient notes and save them to the EMR.</p>
+            <p class="text-xs text-gray-500 mt-1" id="user-id-display"></p>
+        </header>
+
+        <div id="unsupported-browser-alert" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+            <strong class="font-bold">Browser Not Supported!</strong>
+            <span class="block sm:inline">Speech recognition is not supported by your browser. Please try Chrome or Edge.</span>
+        </div>
+
+        <main class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+            <!-- Transcription Section -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800 flex items-center">
+                    <i class="fas fa-microphone-alt mr-3 text-blue-500"></i>
+                    Live Transcription
+                </h2>
+                <div class="bg-gray-50 rounded-lg p-4 min-h-[200px] border border-gray-200" id="transcript-container">
+                    <p id="transcript" class="text-gray-700 whitespace-pre-wrap"></p>
+                    <p id="interim-transcript" class="text-gray-400"></p>
+                </div>
+                <div id="recording-status" class="text-sm text-gray-500 mt-3 h-5 flex items-center">
+                    <!-- Status message will be injected here -->
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex flex-wrap gap-4 items-center mb-8">
+                <button id="start-btn" class="flex items-center justify-center px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-transform transform hover:scale-105">
+                    <i class="fas fa-play mr-2"></i> Start Recording
+                </button>
+                <button id="stop-btn" class="flex items-center justify-center px-6 py-3 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75 transition-transform transform hover:scale-105" disabled>
+                    <i class="fas fa-stop mr-2"></i> Stop Recording
+                </button>
+                <button id="clear-btn" class="flex items-center justify-center px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 transition-transform transform hover:scale-105">
+                     <i class="fas fa-trash-alt mr-2"></i> Clear Transcript
+                </button>
+            </div>
+
+            <!-- Patient Details & EMR Upload -->
+            <div>
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800 flex items-center">
+                    <i class="fas fa-user-edit mr-3 text-green-500"></i>
+                    Patient Details & EMR
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <input type="text" id="patient-name" placeholder="Patient Name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+                    <input type="text" id="patient-dob" placeholder="Patient DOB (YYYY-MM-DD)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+                    <input type="text" id="patient-id" placeholder="Patient ID" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+                </div>
+                <button id="save-btn" class="w-full flex items-center justify-center px-6 py-3 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75 transition-transform transform hover:scale-105">
+                    <i id="save-icon" class="fas fa-cloud-upload-alt mr-2"></i>
+                    <span id="save-text">Save to EMR</span>
+                </button>
+                 <p class="text-xs text-gray-500 mt-2 text-center">*This is a simulation. Notes are saved securely to a cloud database.</p>
+            </div>
+        </main>
+        
+        <!-- Saved Notes Section -->
+        <section class="mt-12">
+             <h2 class="text-2xl font-semibold mb-4 text-gray-800 flex items-center">
+                <i class="fas fa-file-medical-alt mr-3 text-purple-500"></i>
+                Saved Patient Notes
+            </h2>
+            <div id="saved-notes-container" class="space-y-4">
+                <p class="text-gray-500">No notes saved yet.</p>
+                <!-- Saved notes will be dynamically inserted here -->
+            </div>
+        </section>
+
+    </div>
+
+    <script type="module">
+        // --- Firebase Setup ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, addDoc, onSnapshot, deleteDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let db, auth, userId;
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        if (firebaseConfig) {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                //setLogLevel('debug'); // Uncomment for detailed logs
+                
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("User authenticated with UID:", userId);
+                        document.getElementById('user-id-display').textContent = `Session ID: ${userId}`;
+                        loadNotes();
+                    } else {
+                        console.log("No user signed in. Attempting to sign in.");
+                        try {
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        } catch (error) {
+                            console.error("Error during sign-in:", error);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+            }
+        } else {
+             console.error("Firebase config is not available.");
+        }
+
+
+        // --- DOM Elements ---
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const transcriptEl = document.getElementById('transcript');
+        const interimTranscriptEl = document.getElementById('interim-transcript');
+        const recordingStatus = document.getElementById('recording-status');
+        const unsupportedAlert = document.getElementById('unsupported-browser-alert');
+        const savedNotesContainer = document.getElementById('saved-notes-container');
+
+        // --- Speech Recognition Setup ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            let final_transcript = '';
+
+            recognition.onstart = () => {
+                recordingStatus.innerHTML = `<span class="flex items-center text-red-500"><i class="fas fa-circle mr-2 text-xs pulse"></i>Recording...</span>`;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            };
+
+            recognition.onend = () => {
+                recordingStatus.innerHTML = '';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error:", event.error);
+                recordingStatus.textContent = `Error: ${event.error}`;
+            };
+
+            recognition.onresult = (event) => {
+                let interim_transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        final_transcript += event.results[i][0].transcript + ' ';
+                    } else {
+                        interim_transcript += event.results[i][0].transcript;
+                    }
+                }
+                transcriptEl.textContent = final_transcript;
+                interimTranscriptEl.textContent = interim_transcript;
+            };
+
+            // --- Event Listeners ---
+            startBtn.onclick = () => {
+                if (final_transcript.length > 0 && !final_transcript.endsWith(' ')) {
+                    final_transcript += ' '; // Add space if starting mid-sentence
+                }
+                recognition.start();
+            };
+
+            stopBtn.onclick = () => {
+                recognition.stop();
+            };
+
+            clearBtn.onclick = () => {
+                final_transcript = '';
+                transcriptEl.textContent = '';
+                interimTranscriptEl.textContent = '';
+            };
+
+            saveBtn.onclick = async () => {
+                if (!db || !userId) {
+                    alert('Database connection not ready. Please wait.');
+                    return;
+                }
+
+                const patientName = document.getElementById('patient-name').value.trim();
+                const patientDob = document.getElementById('patient-dob').value.trim();
+                const patientId = document.getElementById('patient-id').value.trim();
+                const noteContent = transcriptEl.textContent.trim();
+
+                if (!noteContent) {
+                    alert('The transcription is empty. Please record a note first.');
+                    return;
+                }
+                if (!patientName || !patientId) {
+                    alert('Patient Name and Patient ID are required.');
+                    return;
+                }
+                
+                const saveIcon = document.getElementById('save-icon');
+                const saveText = document.getElementById('save-text');
+
+                saveBtn.disabled = true;
+                saveIcon.className = 'fas fa-spinner fa-spin mr-2';
+                saveText.textContent = 'Saving...';
+                
+                try {
+                    const notesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/medical_notes`);
+                    await addDoc(notesCollectionRef, {
+                        patientName,
+                        patientDob,
+                        patientId,
+                        note: noteContent,
+                        createdAt: serverTimestamp()
+                    });
+
+                    // Clear fields after successful save
+                    final_transcript = '';
+                    transcriptEl.textContent = '';
+                    document.getElementById('patient-name').value = '';
+                    document.getElementById('patient-dob').value = '';
+                    document.getElementById('patient-id').value = '';
+
+                } catch (error) {
+                    console.error("Error saving note:", error);
+                    alert('Failed to save note. Please check the console for errors.');
+                } finally {
+                    saveBtn.disabled = false;
+                    saveIcon.className = 'fas fa-cloud-upload-alt mr-2';
+                    saveText.textContent = 'Save to EMR';
+                }
+            };
+
+        } else {
+            unsupportedAlert.classList.remove('hidden');
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
+            clearBtn.disabled = true;
+            saveBtn.disabled = true;
+        }
+
+        // --- Firestore Data Loading ---
+        function loadNotes() {
+            if (!db || !userId) return;
+            const notesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/medical_notes`);
+            
+            onSnapshot(notesCollectionRef, (snapshot) => {
+                if (snapshot.empty) {
+                    savedNotesContainer.innerHTML = '<p class="text-gray-500">No notes saved yet.</p>';
+                    return;
+                }
+                
+                const notes = [];
+                snapshot.forEach(doc => {
+                    notes.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Sort by creation date, newest first
+                 notes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+
+                renderNotes(notes);
+            }, (error) => {
+                console.error("Error listening to notes collection:", error);
+                savedNotesContainer.innerHTML = '<p class="text-red-500">Error loading notes.</p>';
+            });
+        }
+
+        function renderNotes(notes) {
+            savedNotesContainer.innerHTML = '';
+            notes.forEach(note => {
+                const date = note.createdAt ? new Date(note.createdAt.seconds * 1000).toLocaleString() : 'Date not available';
+                const noteCard = document.createElement('div');
+                noteCard.className = 'bg-white p-5 rounded-lg shadow-md border border-gray-200 group';
+                noteCard.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-lg text-gray-800">${note.patientName}</p>
+                            <p class="text-sm text-gray-600">ID: ${note.patientId} | DOB: ${note.patientDob || 'N/A'}</p>
+                            <p class="text-xs text-gray-400 mt-1">Created: ${date}</p>
+                        </div>
+                        <button data-id="${note.id}" class="delete-btn text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                    <p class="mt-4 text-gray-700 whitespace-pre-wrap">${note.note}</p>
+                `;
+                savedNotesContainer.appendChild(noteCard);
+            });
+             // Add event listeners to delete buttons after they are rendered
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const docId = e.currentTarget.getAttribute('data-id');
+                    if (window.confirm('Are you sure you want to delete this note?')) {
+                        try {
+                             await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/medical_notes`, docId));
+                             console.log("Note deleted successfully");
+                        } catch (error) {
+                             console.error("Error deleting note: ", error);
+                             alert("Failed to delete note.");
+                        }
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
